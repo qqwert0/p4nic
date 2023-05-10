@@ -166,19 +166,19 @@ class PacketGenerator (
     // instIlaDbg.connect(clock)
 
 
-    // class ila_net(seq:Seq[Data]) extends BaseILA(seq)
-    // val instIlaNet = Module(new ila_net(Seq(	
-    //     // io.gradReq,
-    //     // io.paramReq,
-    //     io.cmacTx.ready,
-    //     io.cmacTx.valid,
-    //     io.cmacTx.bits.last,
-    //     io.cmacRx.ready,
-    //     io.cmacRx.valid,
-    //     io.cmacRx.bits.last
-    //     // netRxFifo.io.out
-    // )))
-    // instIlaNet.connect(clock)    
+    class ila_net(seq:Seq[Data]) extends BaseILA(seq)
+    val instIlaNet = Module(new ila_net(Seq(	
+        // io.gradReq,
+        // io.paramReq,
+        io.cmacTx.ready,
+        io.cmacTx.valid,
+        io.cmacTx.bits.last,
+        io.cmacRx.ready,
+        io.cmacRx.valid,
+        io.cmacRx.bits.last
+        // netRxFifo.io.out
+    )))
+    instIlaNet.connect(clock)    
 
 }
 
