@@ -23,10 +23,8 @@ class DataSplit extends Module {
 		val IdxTransNum = Input(UInt(32.W))
     })
 
-
-
-	val data_fifo = XQueue(UInt(512.W),16)
-	val idx_fifo = XQueue(new Idx(),512)
+	val data_fifo = XQueue(UInt(512.W),4096)
+	val idx_fifo = XQueue(new Idx(),1024)
 	io.IndexOut			<> idx_fifo.io.out
 	io.DataOut			<> data_fifo.io.out
 

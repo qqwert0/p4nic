@@ -18,12 +18,13 @@ class P4nicSpase extends Module {
 		val h2c_cmd			= Vec(2,Decoupled(new H2C_CMD))
 		val h2c_data	    = Vec(2,Flipped(Decoupled(new H2C_DATA)))
 		val controlReg		= Vec(2,Input(Vec(64,UInt(32.W))))
+        val statusReg       = Output(Vec(128,UInt(32.W)))
 
     })
 
 	val controlReg = io.controlReg
-	val statusReg = Reg(Vec(128,UInt(32.W)))
-	ToZero(statusReg)
+	// val statusReg = Reg(Vec(128,UInt(32.W)))
+	ToZero(io.statusReg)
 
 
     // Packet gen module
@@ -85,13 +86,16 @@ class P4nicSpase extends Module {
         packetGen(i).io.dataTotalLen     := controlReg(i)(56)
         packetGen(i).io.IdxTransNum      := controlReg(i)(57)
 
+        packetGen(i).io.token_small      := controlReg(i)(20)
+        packetGen(i).io.token_big       := controlReg(i)(21)
+
 
     }
     // statusReg(128) := packetGen.io.paramReq.ready
     // statusReg(129) := packetGen.io.gradReq.ready
 
 
-    Collector.connect_to_status_reg(statusReg, 0)
+    Collector.connect_to_status_reg(io.statusReg, 0)
 
 
 }

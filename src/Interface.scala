@@ -46,5 +46,5 @@ object HToN {
     }
 }
 object CONFIG{
-    def ENG_NUM = 128
+    def ENG_NUM = 256
 }

@@ -28,8 +28,8 @@ class RXWriteData extends Module {
       
     })
 
-	val data_fifo = XQueue(new AXIS(512),2048)
-    val meta_fifo = XQueue(UInt(32.W),512)
+	val data_fifo = XQueue(new AXIS(512),4096)
+    val meta_fifo = XQueue(UInt(32.W),1024)
 	io.NetRxIn			    <> data_fifo.io.in
     io.GlobeIndex			<> meta_fifo.io.in
 
@@ -57,6 +57,16 @@ class RXWriteData extends Module {
 	meta_fifo.io.out.ready					:= (state === sIDLE)
     data_fifo.io.out.ready					:= (state === sPAYLOAD) & out_fifo.io.in.ready 
 	
+    val state_reg               = RegInit(0.U(32.W))
+    state_reg                   := RegNext(state)
+    val rxfinal_cnt_reg         = RegInit(0.U(32.W))
+    state_reg                   := RegNext(rxfinal_cnt)    
+    Collector.report(state_reg)
+    Collector.report(rxfinal)
+    Collector.report(rxfinal_cnt_reg)
+	Collector.fire(io.GlobeIndex)
+	Collector.fire(io.NetRxIn)
+	Collector.fire(io.DataOut)
     ToZero(out_fifo.io.in.valid)
 	ToZero(out_fifo.io.in.bits)
 	ToZero(io.wrMemCmd.valid)

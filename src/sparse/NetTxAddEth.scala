@@ -20,19 +20,21 @@ class NetTxAddEthSpa extends Module {
         val DataOut  = (Decoupled(new AXIS(512)))
     })
 
-	val data_fifo = XQueue(new AXIS(512),16)
-    val meta_fifo = XQueue(new Meta(),16)
+	val data_fifo = XQueue(new AXIS(512),4096)
+    val meta_fifo = XQueue(new Meta(),512)
 	io.DataIn			<> data_fifo.io.in
     io.MetaIn			<> meta_fifo.io.in
 
+    val blank_meta_fifo = XQueue(new Meta(),16)
     val blank_data_fifo = XQueue(new AXIS(512),16)
     val payload_meta_fifo = XQueue(new Meta(),16)
     val payload_data_fifo = XQueue(new AXIS(512),16)
 
     val arbiter			= SerialArbiter(new AXIS(512),2)
 
-	val sIDLE :: sBLANK :: sHEADER :: sPAYLOAD :: Nil = Enum(4)
-	val state                   = RegInit(sIDLE)	
+	val sIDLE :: sBLANK :: sPAYLOAD :: sLAST :: Nil = Enum(4)
+	val state                   = RegInit(sIDLE)
+    val bstate                  	= RegInit(sIDLE)
 	val meta_reg					= Reg(new Meta())
 
 	Collector.fire(io.DataIn)
@@ -40,10 +42,14 @@ class NetTxAddEthSpa extends Module {
     Collector.fire(io.DataOut)
 
 	
-    meta_fifo.io.out.ready                  := payload_meta_fifo.io.in.ready & blank_data_fifo.io.in.ready
-    data_fifo.io.out.ready					:= ((state === sIDLE) & payload_meta_fifo.io.out.valid || (state === sPAYLOAD)) & payload_data_fifo.io.in.ready
+    meta_fifo.io.out.ready                  := payload_meta_fifo.io.in.ready & blank_meta_fifo.io.in.ready
+    data_fifo.io.out.ready					:= (((state === sIDLE) & payload_meta_fifo.io.out.valid) || (state === sPAYLOAD)) & payload_data_fifo.io.in.ready
+    blank_meta_fifo.io.out.ready			:= (bstate === sIDLE) & blank_data_fifo.io.in.ready
     payload_meta_fifo.io.out.ready			:= (state === sIDLE) & data_fifo.io.out.valid & payload_data_fifo.io.in.ready
 
+
+	ToZero(blank_meta_fifo.io.in.valid)
+	ToZero(blank_meta_fifo.io.in.bits)
 	ToZero(blank_data_fifo.io.in.valid)
 	ToZero(blank_data_fifo.io.in.bits)
 	ToZero(payload_meta_fifo.io.in.valid)
@@ -53,16 +59,44 @@ class NetTxAddEthSpa extends Module {
 
 	when(meta_fifo.io.out.fire()){
         when(meta_fifo.io.out.bits.is_empty){
-            blank_data_fifo.io.in.valid            := 1.U
-            blank_data_fifo.io.in.bits.data        := Cat(0.U(400.W),meta_fifo.io.out.bits.head.asUInt)
-            blank_data_fifo.io.in.bits.last        := 1.U
-            blank_data_fifo.io.in.bits.keep        := Cat(0.U(50.W),-1.S(14.W).asTypeOf(UInt(14.W)))
-            state                                  := sIDLE
+            blank_meta_fifo.io.in.valid             := 1.U
+            blank_meta_fifo.io.in.bits              := meta_fifo.io.out.bits
         }otherwise{
             payload_meta_fifo.io.in.valid           := 1.U
             payload_meta_fifo.io.in.bits            := meta_fifo.io.out.bits
-            state                                   := sIDLE
         }
+	}
+
+
+	switch(bstate){
+		is(sIDLE){
+			when(blank_meta_fifo.io.out.fire()){
+                blank_data_fifo.io.in.valid            := 1.U
+                blank_data_fifo.io.in.bits.data        := Cat(0.U(400.W),blank_meta_fifo.io.out.bits.head.asUInt)
+                blank_data_fifo.io.in.bits.last        := 0.U
+                blank_data_fifo.io.in.bits.keep        := -1.S(64.W).asTypeOf(UInt(64.W))
+                bstate                                 := sPAYLOAD
+			}
+		}      
+		is(sPAYLOAD){
+			when(blank_data_fifo.io.in.ready){
+                blank_data_fifo.io.in.valid            := 1.U
+                blank_data_fifo.io.in.bits.data        := 0.U
+                blank_data_fifo.io.in.bits.last        := 0.U
+                blank_data_fifo.io.in.bits.keep        := -1.S(64.W).asTypeOf(UInt(64.W))
+                bstate                                  := sLAST
+			}
+		}
+    	is(sLAST){
+			when(blank_data_fifo.io.in.ready){
+                blank_data_fifo.io.in.valid             := 1.U
+                blank_data_fifo.io.in.bits.data         := 0.U
+                blank_data_fifo.io.in.bits.last         := 1.U
+                blank_data_fifo.io.in.bits.keep         := Cat(0.U(50.W),-1.S(14.W).asTypeOf(UInt(14.W)))
+                bstate                                   := sIDLE
+			}
+		}    
+
 	}
 
 
@@ -96,5 +130,24 @@ class NetTxAddEthSpa extends Module {
     arbiter.io.in(0)        <>  blank_data_fifo.io.out
     arbiter.io.in(1)        <>  payload_data_fifo.io.out
     arbiter.io.out          <>  io.DataOut
+
+    // val blank_data_valid = blank_data_fifo.io.in.valid
+    // val blank_data_ready = blank_data_fifo.io.in.ready
+    // val paymeta_in_valid = payload_meta_fifo.io.in.valid
+    // val paymeta_in_ready = payload_meta_fifo.io.in.ready
+    // val paymeta_out_valid = payload_meta_fifo.io.out.valid
+    // val paymeta_out_ready = payload_meta_fifo.io.out.ready
+    // class ila_txpro(seq:Seq[Data]) extends BaseILA(seq)
+    // val instIlatxp = Module(new ila_txpro(Seq(	
+    //     meta_fifo.io.out, 
+    //     io.DataIn.valid,
+    //     io.DataIn.ready,
+    //     io.DataIn.bits.last,             
+    //     io.DataOut.valid,
+    //     io.DataOut.ready,
+    //     io.DataOut.bits.last,    
+	// 	state
+    // )))
+    // instIlatxp.connect(clock)  
 
 }

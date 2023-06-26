@@ -281,7 +281,7 @@ endmodule
                 end
                 READ_IDLE:begin
                     read_data_data      <= fifo[read_addr];
-                    if(rd_idle_count == 4)begin
+                    if(rd_idle_count == 1)begin
                         rd_data_state       <= READ_DATA;
                     end
                     else begin

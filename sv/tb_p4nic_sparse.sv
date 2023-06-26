@@ -226,6 +226,136 @@ module testbench_P4nicSpase(
     reg       [31:0]    io_controlReg_1_63            =0;
     wire      [63:0]    h2c_data_0_keep;
     wire      [63:0]    h2c_data_1_keep;
+    wire      [31:0]    io_statusReg_0                ;
+    wire      [31:0]    io_statusReg_1                ;
+    wire      [31:0]    io_statusReg_2                ;
+    wire      [31:0]    io_statusReg_3                ;
+    wire      [31:0]    io_statusReg_4                ;
+    wire      [31:0]    io_statusReg_5                ;
+    wire      [31:0]    io_statusReg_6                ;
+    wire      [31:0]    io_statusReg_7                ;
+    wire      [31:0]    io_statusReg_8                ;
+    wire      [31:0]    io_statusReg_9                ;
+    wire      [31:0]    io_statusReg_10               ;
+    wire      [31:0]    io_statusReg_11               ;
+    wire      [31:0]    io_statusReg_12               ;
+    wire      [31:0]    io_statusReg_13               ;
+    wire      [31:0]    io_statusReg_14               ;
+    wire      [31:0]    io_statusReg_15               ;
+    wire      [31:0]    io_statusReg_16               ;
+    wire      [31:0]    io_statusReg_17               ;
+    wire      [31:0]    io_statusReg_18               ;
+    wire      [31:0]    io_statusReg_19               ;
+    wire      [31:0]    io_statusReg_20               ;
+    wire      [31:0]    io_statusReg_21               ;
+    wire      [31:0]    io_statusReg_22               ;
+    wire      [31:0]    io_statusReg_23               ;
+    wire      [31:0]    io_statusReg_24               ;
+    wire      [31:0]    io_statusReg_25               ;
+    wire      [31:0]    io_statusReg_26               ;
+    wire      [31:0]    io_statusReg_27               ;
+    wire      [31:0]    io_statusReg_28               ;
+    wire      [31:0]    io_statusReg_29               ;
+    wire      [31:0]    io_statusReg_30               ;
+    wire      [31:0]    io_statusReg_31               ;
+    wire      [31:0]    io_statusReg_32               ;
+    wire      [31:0]    io_statusReg_33               ;
+    wire      [31:0]    io_statusReg_34               ;
+    wire      [31:0]    io_statusReg_35               ;
+    wire      [31:0]    io_statusReg_36               ;
+    wire      [31:0]    io_statusReg_37               ;
+    wire      [31:0]    io_statusReg_38               ;
+    wire      [31:0]    io_statusReg_39               ;
+    wire      [31:0]    io_statusReg_40               ;
+    wire      [31:0]    io_statusReg_41               ;
+    wire      [31:0]    io_statusReg_42               ;
+    wire      [31:0]    io_statusReg_43               ;
+    wire      [31:0]    io_statusReg_44               ;
+    wire      [31:0]    io_statusReg_45               ;
+    wire      [31:0]    io_statusReg_46               ;
+    wire      [31:0]    io_statusReg_47               ;
+    wire      [31:0]    io_statusReg_48               ;
+    wire      [31:0]    io_statusReg_49               ;
+    wire      [31:0]    io_statusReg_50               ;
+    wire      [31:0]    io_statusReg_51               ;
+    wire      [31:0]    io_statusReg_52               ;
+    wire      [31:0]    io_statusReg_53               ;
+    wire      [31:0]    io_statusReg_54               ;
+    wire      [31:0]    io_statusReg_55               ;
+    wire      [31:0]    io_statusReg_56               ;
+    wire      [31:0]    io_statusReg_57               ;
+    wire      [31:0]    io_statusReg_58               ;
+    wire      [31:0]    io_statusReg_59               ;
+    wire      [31:0]    io_statusReg_60               ;
+    wire      [31:0]    io_statusReg_61               ;
+    wire      [31:0]    io_statusReg_62               ;
+    wire      [31:0]    io_statusReg_63               ;
+    wire      [31:0]    io_statusReg_64               ;
+    wire      [31:0]    io_statusReg_65               ;
+    wire      [31:0]    io_statusReg_66               ;
+    wire      [31:0]    io_statusReg_67               ;
+    wire      [31:0]    io_statusReg_68               ;
+    wire      [31:0]    io_statusReg_69               ;
+    wire      [31:0]    io_statusReg_70               ;
+    wire      [31:0]    io_statusReg_71               ;
+    wire      [31:0]    io_statusReg_72               ;
+    wire      [31:0]    io_statusReg_73               ;
+    wire      [31:0]    io_statusReg_74               ;
+    wire      [31:0]    io_statusReg_75               ;
+    wire      [31:0]    io_statusReg_76               ;
+    wire      [31:0]    io_statusReg_77               ;
+    wire      [31:0]    io_statusReg_78               ;
+    wire      [31:0]    io_statusReg_79               ;
+    wire      [31:0]    io_statusReg_80               ;
+    wire      [31:0]    io_statusReg_81               ;
+    wire      [31:0]    io_statusReg_82               ;
+    wire      [31:0]    io_statusReg_83               ;
+    wire      [31:0]    io_statusReg_84               ;
+    wire      [31:0]    io_statusReg_85               ;
+    wire      [31:0]    io_statusReg_86               ;
+    wire      [31:0]    io_statusReg_87               ;
+    wire      [31:0]    io_statusReg_88               ;
+    wire      [31:0]    io_statusReg_89               ;
+    wire      [31:0]    io_statusReg_90               ;
+    wire      [31:0]    io_statusReg_91               ;
+    wire      [31:0]    io_statusReg_92               ;
+    wire      [31:0]    io_statusReg_93               ;
+    wire      [31:0]    io_statusReg_94               ;
+    wire      [31:0]    io_statusReg_95               ;
+    wire      [31:0]    io_statusReg_96               ;
+    wire      [31:0]    io_statusReg_97               ;
+    wire      [31:0]    io_statusReg_98               ;
+    wire      [31:0]    io_statusReg_99               ;
+    wire      [31:0]    io_statusReg_100              ;
+    wire      [31:0]    io_statusReg_101              ;
+    wire      [31:0]    io_statusReg_102              ;
+    wire      [31:0]    io_statusReg_103              ;
+    wire      [31:0]    io_statusReg_104              ;
+    wire      [31:0]    io_statusReg_105              ;
+    wire      [31:0]    io_statusReg_106              ;
+    wire      [31:0]    io_statusReg_107              ;
+    wire      [31:0]    io_statusReg_108              ;
+    wire      [31:0]    io_statusReg_109              ;
+    wire      [31:0]    io_statusReg_110              ;
+    wire      [31:0]    io_statusReg_111              ;
+    wire      [31:0]    io_statusReg_112              ;
+    wire      [31:0]    io_statusReg_113              ;
+    wire      [31:0]    io_statusReg_114              ;
+    wire      [31:0]    io_statusReg_115              ;
+    wire      [31:0]    io_statusReg_116              ;
+    wire      [31:0]    io_statusReg_117              ;
+    wire      [31:0]    io_statusReg_118              ;
+    wire      [31:0]    io_statusReg_119              ;
+    wire      [31:0]    io_statusReg_120              ;
+    wire      [31:0]    io_statusReg_121              ;
+    wire      [31:0]    io_statusReg_122              ;
+    wire      [31:0]    io_statusReg_123              ;
+    wire      [31:0]    io_statusReg_124              ;
+    wire      [31:0]    io_statusReg_125              ;
+    wire      [31:0]    io_statusReg_126              ;
+    wire      [31:0]    io_statusReg_127              ;
+
+
 
 DMA #(512) qdma0(
     clock,
@@ -291,10 +421,25 @@ P4nicSpase P4nicSpase_inst(
      * Reg(38)    : memRead len
      * Reg(40-41): memRead req callback
      * Reg(42)    : memRead req valid
-     * Reg(60)    : Index total length
-     * Reg(61)    : Node rank
-     * Reg(62)    : Engine rank
+     * Reg(56)    : dataTotalLen
+     * Reg(57)    : IdxTransNum.
+     * Reg(58)    : rxIdxInitAddr.
+     * Reg(59)    : rxDataInitAddr.
+     * Reg(60)    : idxTotalLen
+     * Reg(61)    : nodeRank.
+     * Reg(62)    : engineRand.
+     * Reg(63)    : RxIdxDepth.
+
      */
+
+    int index_row0 = 10;
+    int block_num0 = 1027;     
+    int index_row1 = 10;
+    int block_num1 = 1027;
+    int block_byte = 128;
+    int ONCE_TX_BLOCK = 1024;
+    int ONCE_RX_ROW = 64;
+    int ENGINE_NUM = 256;
 
 
 initial begin
@@ -304,10 +449,14 @@ initial begin
     reset <= 0;
     #10
     // qdma0.init_incr(32'd0,32'd9472,32'd5); //int start_addr, int length, int offset
-    qdma0.init_from_file("/home/amax/hhj/chisel_4p4nic/p4nic/sv/data.txt",12);//path, line numbers
-    qdma1.init_from_file("/home/amax/hhj/chisel_4p4nic/p4nic/sv/data1.txt",12);//path, line numbers
-     qdma0.init_incr(32'd2048,32'd16384,32'd5); //int start_addr, int length, int offset
+    qdma0.init_from_file("/home/amax/hhj/chisel_4p4nic/p4nic/sv/a2.txt",160);//path, line numbers
+    qdma1.init_from_file("/home/amax/hhj/chisel_4p4nic/p4nic/sv/a2.txt",160);//path, line numbers
+    // qdma0.init_incr(32'd27648,32'd16384,32'd5); //int start_addr, int length, int offset
     #100;
+    io_controlReg_0_20   <= 8;
+    io_controlReg_0_21   <= 16;
+    io_controlReg_1_20   <= 8;
+    io_controlReg_1_21   <= 16;
     io_controlReg_0_28   <= 0;//memwrite phys address
     io_controlReg_0_29   <= 0;
     io_controlReg_0_30   <= 0;//memwrite len
@@ -320,16 +469,16 @@ initial begin
     //io_controlReg_0_38   <= 9472;//memread len 9472=8192+ 1280(10 data packet)
     //io_controlReg_0_38   <= 270336;//1packet memread len 270336 264KB=8KB+ 256KB
    // io_controlReg_0_38   <= 540672;//2packet memread len 540672=2*270336 264KB=8KB+ 256KB
-    io_controlReg_0_38   <= 8448;//2packet memread len 135168=2*67584 66KB=2Kb+ 64Kb
+    io_controlReg_0_38   <= ONCE_TX_BLOCK * 4 + ONCE_TX_BLOCK * block_byte;//2packet memread len 135168=2*67584 66KB=2Kb+ 64Kb
     io_controlReg_0_40   <= 0;
     io_controlReg_0_41   <= 0;
     io_controlReg_0_42   <= 0;
-    io_controlReg_0_56   <= 320;
-    io_controlReg_0_57   <= 64;
-    io_controlReg_0_58   <= 32'h4444;
-    io_controlReg_0_59   <= 32'h5555;
-    io_controlReg_0_60   <= 12;
-    io_controlReg_0_63   <= 4;
+    io_controlReg_0_56   <= block_byte * block_num0/64;//block_byte * block_num/64;
+    io_controlReg_0_57   <= ONCE_TX_BLOCK;
+    io_controlReg_0_58   <= 32'h1000_4444;
+    io_controlReg_0_59   <= 32'h1000_5555;
+    io_controlReg_0_60   <= index_row0 * ENGINE_NUM/16;
+    io_controlReg_0_63   <= ONCE_RX_ROW;
     io_controlReg_1_28   <= 0;
     io_controlReg_1_29   <= 0;
     io_controlReg_1_30   <= 0;
@@ -338,46 +487,92 @@ initial begin
     io_controlReg_1_34   <= 0;
     io_controlReg_1_36   <= 0;
     io_controlReg_1_37   <= 0;
-    io_controlReg_1_38   <= 8448;
+    io_controlReg_1_38   <= ONCE_TX_BLOCK * 4 + ONCE_TX_BLOCK * block_byte;
     io_controlReg_1_40   <= 0;
     io_controlReg_1_41   <= 0;
     io_controlReg_1_42   <= 0;
-    io_controlReg_1_56   <= 320;
-    io_controlReg_1_57   <= 64;
-    io_controlReg_1_58   <= 32'h4444;
-    io_controlReg_1_59   <= 32'h5555;    
-    io_controlReg_1_60   <= 12;   
+    io_controlReg_1_56   <= block_byte * block_num1/64;
+    io_controlReg_1_57   <= ONCE_TX_BLOCK;
+    io_controlReg_1_58   <= 32'h1000_4444;
+    io_controlReg_1_59   <= 32'h1000_5555;    
+    io_controlReg_1_60   <= index_row1 * ENGINE_NUM/16;  
     io_controlReg_1_61   <= 0;
     io_controlReg_1_62   <= 0;
-    io_controlReg_1_63   <= 4;     
+    io_controlReg_1_63   <= ONCE_RX_ROW;     
     #50;
     io_controlReg_0_42   <= 1;  //read qdma0 memory
     io_controlReg_1_42   <= 1;  //read qdma1 memory
     #50
     io_controlReg_0_42   <= 0;  //write qdma0 memory
     io_controlReg_1_42   <= 0;  //write qdma1 memory
-    #4200
-    io_controlReg_0_36   <= 256;//memread phys address
-    io_controlReg_0_37   <= 0;
-    io_controlReg_0_38   <= 8448;//2packet memread len 135168=2*67584 66KB=2Kb+ 64Kb    
+    #150000
+    io_controlReg_0_36   <= ONCE_TX_BLOCK *4;//memread phys address
+    io_controlReg_0_38   <= 4096 + 384;
     io_controlReg_0_42   <= 1;  //read qdma0 memory
-    io_controlReg_1_36   <= 256;//memread phys address
-    io_controlReg_1_37   <= 0;
-    io_controlReg_1_38   <= 8448;//2packet memread len 135168=2*67584 66KB=2Kb+ 64Kb    
+    io_controlReg_1_36   <= ONCE_TX_BLOCK *4;//memread phys address
+    io_controlReg_1_38   <= 4096 + 384;
     io_controlReg_1_42   <= 1;  //read qdma0 memory
 
     #20
     io_controlReg_0_42   <= 0;  //read qdma0 memory
     io_controlReg_1_42   <= 0;  //read qdma0 memory
-    #4200
-    io_controlReg_0_36   <= 512;//memread phys address
-    io_controlReg_0_37   <= 0;
-    io_controlReg_0_38   <= 4352;//2packet memread len 135168=2*67584 66KB=2Kb+ 64Kb    
+    #150000
+    io_controlReg_0_36   <= ONCE_TX_BLOCK *8;//memread phys address
+    io_controlReg_0_38   <= 2048;
     io_controlReg_0_42   <= 1;  //read qdma0 memory
-    io_controlReg_1_36   <= 512;//memread phys address
-    io_controlReg_1_37   <= 0;
-    io_controlReg_1_38   <= 4352;//2packet memread len 135168=2*67584 66KB=2Kb+ 64Kb    
+    io_controlReg_1_36   <= ONCE_TX_BLOCK *8;//memread phys address
+    io_controlReg_1_38   <= 2048;
     io_controlReg_1_42   <= 1;  //read qdma0 memory
+    // #20
+    // io_controlReg_0_42   <= 0;  //read qdma0 memory
+    // io_controlReg_1_42   <= 0;  //read qdma0 memory
+    // #150000
+    // io_controlReg_0_36   <= ONCE_TX_BLOCK *12;//memread phys address
+    // io_controlReg_0_42   <= 1;  //read qdma0 memory
+    // io_controlReg_1_36   <= ONCE_TX_BLOCK *12;//memread phys address
+    // io_controlReg_1_42   <= 1;  //read qdma0 memory
+    // #20
+    // io_controlReg_0_42   <= 0;  //read qdma0 memory
+    // io_controlReg_1_42   <= 0;  //read qdma0 memory
+    // #150000
+    // io_controlReg_0_36   <= ONCE_TX_BLOCK *16;//memread phys address
+    // io_controlReg_0_42   <= 1;  //read qdma0 memory
+    // io_controlReg_1_36   <= ONCE_TX_BLOCK *16;//memread phys address
+    // io_controlReg_1_42   <= 1;  //read qdma0 memory
+    // #20
+    // io_controlReg_0_42   <= 0;  //read qdma0 memory
+    // io_controlReg_1_42   <= 0;  //read qdma0 memory
+    // #150000
+    // io_controlReg_0_36   <= ONCE_TX_BLOCK *20;//memread phys address
+    // io_controlReg_0_42   <= 1;  //read qdma0 memory
+    // io_controlReg_1_36   <= ONCE_TX_BLOCK *20;//memread phys address
+    // io_controlReg_1_42   <= 1;  //read qdma0 memory
+    // #20
+    // io_controlReg_0_42   <= 0;  //read qdma0 memory
+    // io_controlReg_1_42   <= 0;  //read qdma0 memory
+    // #150000
+    // io_controlReg_0_36   <= ONCE_TX_BLOCK *24;//memread phys address
+    // // io_controlReg_0_38   <= 3072 + 89856;//2packet memread len 
+    // io_controlReg_0_42   <= 1;  //read qdma0 memory
+    // io_controlReg_1_36   <= ONCE_TX_BLOCK *24;//memread phys address
+    // // io_controlReg_1_38   <= 3072 + 89856;//2packet memread len 
+    // io_controlReg_1_42   <= 1;  //read qdma0 memory
+    // #20
+    // io_controlReg_0_42   <= 0;  //read qdma0 memory
+    // io_controlReg_1_42   <= 0;  //read qdma0 memory
+    // #150000
+    // io_controlReg_0_36   <= ONCE_TX_BLOCK *28;//memread phys address
+    // io_controlReg_0_42   <= 1;  //read qdma0 memory
+    // io_controlReg_1_36   <= ONCE_TX_BLOCK *28;//memread phys address
+    // io_controlReg_1_42   <= 1;  //read qdma0 memory
+    // #20
+    // io_controlReg_0_42   <= 0;  //read qdma0 memory
+    // io_controlReg_1_42   <= 0;  //read qdma0 memory
+    // #150000
+    // io_controlReg_0_36   <= ONCE_TX_BLOCK *32;//memread phys address
+    // io_controlReg_0_42   <= 1;  //read qdma0 memory
+    // io_controlReg_1_36   <= ONCE_TX_BLOCK *32;//memread phys address
+    // io_controlReg_1_42   <= 1;  //read qdma0 memory
 
 
 end

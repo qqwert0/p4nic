@@ -15,6 +15,12 @@ class P4Meta extends Bundle{
 	val has_data 	= Bool()
 }
 
+class P4slot extends Bundle{
+	val next_idx 	= UInt(32.W)
+	val has_data 	= Bool()
+	val isfull		= Bool()
+}
+
 class P4Sim extends Module {
     val io = IO(new Bundle {
         // Net data
@@ -31,14 +37,18 @@ class P4Sim extends Module {
 
 	val tx 	= Module(new P4SimTx)  
 
-	val eth_lshift0 = Module(new LSHIFT(26,512)) 
-	val eth_lshift1 = Module(new LSHIFT(26,512))
+	val eth_lshift0 = Module(new LSHIFT(14,512)) 
+	val eth_lshift1 = Module(new LSHIFT(14,512))
 
-	val data_pre0_fifo	= XQueue(new AXIS(512), 8)
-	val data_pre1_fifo	= XQueue(new AXIS(512), 8)
-	val data_fifo	= XQueue(new AXIS(512), 8)
-	val meta_fifo 	= XQueue(new P4Meta(), 8)
-	val eth_rshift  = Module(new RSHIFT(26,512))  
+	val data_pre0_fifo	= XQueue(new AXIS(512), 512)
+	val data_pre1_fifo	= XQueue(new AXIS(512), 512)
+	val data_fifo	= XQueue(new AXIS(512), 512)
+	val meta_fifo 	= XQueue(new P4Meta(), 512)
+	val eth_rshift  = Module(new RSHIFT(14,512))  
+
+
+	val p4slot = RegInit(VecInit(Seq.fill(CONFIG.ENG_NUM*2)(0.U.asTypeOf(new P4slot()))))
+	val sendfrom = RegInit(false.B)
 
 	ToZero(data_fifo.io.in.valid)
 	ToZero(data_fifo.io.in.bits)
@@ -65,46 +75,111 @@ class P4Sim extends Module {
 
 	tx.io.DataOut.ready		:= io.NetTx(0).ready & io.NetTx(1).ready
 
-	val sIDLE :: sALL :: sREAD1 :: sREAD0 :: Nil = Enum(4)
+	val sIDLE :: sMETA1 :: sALL :: sREAD1 :: sREAD0 :: Nil = Enum(5)
 	val state                       = RegInit(sIDLE)	
 
 	
-	rx0.io.MetaOUt.ready			:= (state === sIDLE)  & rx1.io.MetaOUt.valid
-	rx1.io.MetaOUt.ready			:= (state === sIDLE)  & rx0.io.MetaOUt.valid
+	rx0.io.MetaOUt.ready			:= (state === sIDLE) & meta_fifo.io.in.ready
+	rx1.io.MetaOUt.ready			:= (state === sMETA1) & meta_fifo.io.in.ready
 
 	data_pre0_fifo.io.out.ready	:= ((state === sREAD0) & data_fifo.io.in.ready) || ((state === sALL) & data_pre1_fifo.io.out.valid & data_fifo.io.in.ready)
 	data_pre1_fifo.io.out.ready	:= ((state === sREAD1) & data_fifo.io.in.ready) || ((state === sALL) & data_pre0_fifo.io.out.valid & data_fifo.io.in.ready)	
 
 
 	
+
 	switch(state){
 		is(sIDLE){
-			when(rx0.io.MetaOUt.fire() & rx1.io.MetaOUt.fire()){
-				when(rx0.io.MetaOUt.bits.next_idx > rx1.io.MetaOUt.bits.next_idx){
-					meta_fifo.io.in.bits.next_idx 	:= rx1.io.MetaOUt.bits.next_idx
-					meta_fifo.io.in.bits.slot_idx 	:= rx1.io.MetaOUt.bits.slot_idx
-				}.otherwise{
-					meta_fifo.io.in.bits.next_idx	:= rx0.io.MetaOUt.bits.next_idx
-					meta_fifo.io.in.bits.slot_idx 	:= rx0.io.MetaOUt.bits.slot_idx
-				}
-				meta_fifo.io.in.valid			:= 1.U
-                when(rx0.io.MetaOUt.bits.has_data & rx1.io.MetaOUt.bits.has_data){
-					state		:= sALL
-				}.elsewhen(!rx0.io.MetaOUt.bits.has_data){
-					state		:= sREAD1
-				}.otherwise{
-					state		:= sREAD0
-				}
+			when(rx0.io.MetaOUt.fire()){
+				when(p4slot(rx0.io.MetaOUt.bits.slot_idx).isfull){
+					when(rx0.io.MetaOUt.bits.next_idx > p4slot(rx0.io.MetaOUt.bits.slot_idx).next_idx){
+						meta_fifo.io.in.bits.next_idx 	:= p4slot(rx0.io.MetaOUt.bits.slot_idx).next_idx
+						meta_fifo.io.in.bits.slot_idx 	:= rx0.io.MetaOUt.bits.slot_idx
+					}.otherwise{
+						meta_fifo.io.in.bits.next_idx	:= rx0.io.MetaOUt.bits.next_idx
+						meta_fifo.io.in.bits.slot_idx 	:= rx0.io.MetaOUt.bits.slot_idx
+					}					
+					p4slot(rx0.io.MetaOUt.bits.slot_idx).isfull		:= false.B
+					meta_fifo.io.in.valid			:= 1.U
 
+					when(rx0.io.MetaOUt.bits.has_data & p4slot(rx0.io.MetaOUt.bits.slot_idx).has_data){
+						state		:= sALL
+					}.elsewhen(rx0.io.MetaOUt.bits.has_data){
+						state		:= sALL//sREAD0
+					}.otherwise{
+						state		:= sALL//sREAD1
+					}
+					sendfrom		:= false.B					
+				}.otherwise{
+					p4slot(rx0.io.MetaOUt.bits.slot_idx).next_idx	:= rx0.io.MetaOUt.bits.next_idx
+					p4slot(rx0.io.MetaOUt.bits.slot_idx).has_data	:= rx0.io.MetaOUt.bits.has_data
+					p4slot(rx0.io.MetaOUt.bits.slot_idx).isfull		:= true.B
+					state											:= sMETA1
+				}
 			}
 		}
+		is(sMETA1){
+			when(rx1.io.MetaOUt.fire()){
+				when(p4slot(rx1.io.MetaOUt.bits.slot_idx).isfull){
+					when(rx1.io.MetaOUt.bits.next_idx > p4slot(rx1.io.MetaOUt.bits.slot_idx).next_idx){
+						meta_fifo.io.in.bits.next_idx 	:= p4slot(rx1.io.MetaOUt.bits.slot_idx).next_idx
+						meta_fifo.io.in.bits.slot_idx 	:= rx1.io.MetaOUt.bits.slot_idx
+					}.otherwise{
+						meta_fifo.io.in.bits.next_idx	:= rx1.io.MetaOUt.bits.next_idx
+						meta_fifo.io.in.bits.slot_idx 	:= rx1.io.MetaOUt.bits.slot_idx
+					}					
+					p4slot(rx1.io.MetaOUt.bits.slot_idx).isfull		:= false.B
+					meta_fifo.io.in.valid			:= 1.U
+
+					when(rx1.io.MetaOUt.bits.has_data & p4slot(rx1.io.MetaOUt.bits.slot_idx).has_data){
+						state		:= sALL
+					}.elsewhen(rx1.io.MetaOUt.bits.has_data){
+						state		:= sALL//sREAD1
+					}.otherwise{
+						state		:= sALL//sREAD0
+					}			
+					sendfrom		:= true.B		
+				}.otherwise{
+					p4slot(rx1.io.MetaOUt.bits.slot_idx).next_idx	:= rx1.io.MetaOUt.bits.next_idx
+					p4slot(rx1.io.MetaOUt.bits.slot_idx).has_data	:= rx1.io.MetaOUt.bits.has_data
+					p4slot(rx1.io.MetaOUt.bits.slot_idx).isfull		:= true.B
+					state											:= sIDLE
+				}
+			}
+		}
+
+		// is(sIDLE){
+		// 	when(rx0.io.MetaOUt.fire() & rx1.io.MetaOUt.fire()){
+		// 		when(rx0.io.MetaOUt.bits.next_idx > rx1.io.MetaOUt.bits.next_idx){
+		// 			meta_fifo.io.in.bits.next_idx 	:= rx1.io.MetaOUt.bits.next_idx
+		// 			meta_fifo.io.in.bits.slot_idx 	:= rx1.io.MetaOUt.bits.slot_idx
+		// 		}.otherwise{
+		// 			meta_fifo.io.in.bits.next_idx	:= rx0.io.MetaOUt.bits.next_idx
+		// 			meta_fifo.io.in.bits.slot_idx 	:= rx0.io.MetaOUt.bits.slot_idx
+		// 		}
+		// 		meta_fifo.io.in.valid			:= 1.U
+        //         when(rx0.io.MetaOUt.bits.has_data & rx1.io.MetaOUt.bits.has_data){
+		// 			state		:= sALL
+		// 		}.elsewhen(!rx0.io.MetaOUt.bits.has_data){
+		// 			state		:= sREAD1
+		// 		}.otherwise{
+		// 			state		:= sREAD0
+		// 		}
+
+		// 	}
+		// }
 		is(sALL){
             when(data_pre0_fifo.io.out.fire() & data_pre1_fifo.io.out.fire()){
                 data_fifo.io.in.bits     	<> data_pre0_fifo.io.out.bits
 				data_fifo.io.in.bits.data	:= data_pre0_fifo.io.out.bits.data + data_pre1_fifo.io.out.bits.data
                 data_fifo.io.in.valid    	:= 1.U
                 when(data_pre0_fifo.io.out.bits.last === 1.U){
-                    state               := sIDLE
+					when(sendfrom){
+						state               := sIDLE
+					}.otherwise{
+						state               := sMETA1
+					}
+                    
                 }                
             }
 		}
@@ -114,7 +189,11 @@ class P4Sim extends Module {
 				data_fifo.io.in.bits.data	:= data_pre1_fifo.io.out.bits.data
                 data_fifo.io.in.valid    	:= 1.U
                 when(data_pre1_fifo.io.out.bits.last === 1.U){
-                    state               := sIDLE
+					when(sendfrom){
+						state               := sIDLE
+					}.otherwise{
+						state               := sMETA1
+					}
                 }                
             }
 		}
@@ -124,7 +203,11 @@ class P4Sim extends Module {
 				data_fifo.io.in.bits.data	:= data_pre0_fifo.io.out.bits.data
                 data_fifo.io.in.valid    	:= 1.U
                 when(data_pre0_fifo.io.out.bits.last === 1.U){
-                    state               := sIDLE
+					when(sendfrom){
+						state               := sIDLE
+					}.otherwise{
+						state               := sMETA1
+					}
                 }                
             }
 		}

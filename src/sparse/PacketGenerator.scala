@@ -39,6 +39,9 @@ class PacketGenerator (
         val engineRand  = Input(UInt(32.W))
         val RxIdxDepth  = Input(UInt(32.W))
         val IdxTransNum = Input(UInt(32.W))
+        //token
+        val token_small  = Input(UInt(8.W))
+        val token_big    = Input(UInt(8.W))        
     })
 
     Collector.fire(io.cmacTx)
@@ -47,7 +50,7 @@ class PacketGenerator (
     Collector.fireLast(io.cmacRx)
     
     // Network Module
-    val netRxFifo    = XQueue(new AXIS(512), 8)
+    val netRxFifo    = XQueue(new AXIS(512), 1024)
 
     val networkInst     = Module(new NetworkStackSpa)
 
@@ -62,6 +65,9 @@ class PacketGenerator (
     networkInst.io.engineRand       := io.engineRand
     networkInst.io.RxIdxDepth       := io.RxIdxDepth
     networkInst.io.IdxTransNum      := io.IdxTransNum
+
+    networkInst.io.token_small      := io.token_small
+    networkInst.io.token_big        := io.token_big
 
     // 1. Send parameter request
 
@@ -139,25 +145,35 @@ class PacketGenerator (
         dbg_cnt := 0.U
     }
 
+
+    class ila_timer(seq:Seq[Data]) extends BaseILA(seq)
+    val instIlatimer = Module(new ila_timer(Seq(	
+        timer_en,
+        timer,
+        networkInst.io.rfinal
+    )))
+    instIlatimer.connect(clock) 
+
     dontTouch(timer)
     // class ila_debug(seq:Seq[Data]) extends BaseILA(seq)
     // val instIlaDbg = Module(new ila_debug(Seq(	
     //     io.c2hCmd.ready,
     //     io.c2hCmd.valid,
-    //     // io.c2hCmd.bits.addr,
-    //     // io.c2hCmd.bits.len,
+    //     io.c2hCmd.bits.addr,
+    //     io.c2hCmd.bits.len,
     //     io.c2hData.ready,
     //     io.c2hData.valid,
     //     // io.c2hData.bits.data,
     //     io.c2hData.bits.last,
     //     io.h2cCmd.ready,
     //     io.h2cCmd.valid,
-    //     // io.h2cCmd.bits.addr,
-    //     // io.h2cCmd.bits.len,        
+    //     io.h2cCmd.bits.addr,
+    //     io.h2cCmd.bits.len,        
     //     io.h2cData.ready,
     //     io.h2cData.valid,
     //     // io.h2cData.bits.data,
-    //     io.h2cData.bits.last,        
+    //     io.h2cData.bits.last, 
+    //     io.rxIdxInitAddr
     //     // io.gradReq,
     //     // io.paramReq,
     //     // io.NetTx,
@@ -166,6 +182,10 @@ class PacketGenerator (
     // instIlaDbg.connect(clock)
 
 
+    val tx_data = Wire(UInt(112.W))
+    tx_data := io.cmacTx.bits.data(111,0)
+    val rx_data = Wire(UInt(112.W))
+    rx_data := io.cmacRx.bits.data(111,0)
     class ila_net(seq:Seq[Data]) extends BaseILA(seq)
     val instIlaNet = Module(new ila_net(Seq(	
         // io.gradReq,
@@ -173,9 +193,11 @@ class PacketGenerator (
         io.cmacTx.ready,
         io.cmacTx.valid,
         io.cmacTx.bits.last,
+        tx_data,
         io.cmacRx.ready,
         io.cmacRx.valid,
-        io.cmacRx.bits.last
+        io.cmacRx.bits.last,
+        rx_data
         // netRxFifo.io.out
     )))
     instIlaNet.connect(clock)    

@@ -49,8 +49,8 @@ class P4SimRx extends Module {
                 data_fifo.io.in.bits 		<> io.NetRx.bits
 				eth_header_tmp          := io.NetRx.bits.data(207,0).asTypeOf(eth_header_tmp)
                 meta_fifo.io.in.valid		:= 1.U
-                meta_fifo.io.in.bits.next_idx	:= eth_header_tmp.next_idx	
-				meta_fifo.io.in.bits.slot_idx	:= eth_header_tmp.index				
+                meta_fifo.io.in.bits.next_idx	:= HToN(eth_header_tmp.next_idx)	
+				meta_fifo.io.in.bits.slot_idx	:= HToN(eth_header_tmp.index)				
 
                 when(io.NetRx.bits.last =/= 1.U){
                     state               := sPAYLOAD

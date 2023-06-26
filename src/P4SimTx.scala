@@ -41,8 +41,8 @@ class P4SimTx extends Module {
 	switch(state){
 		is(sIDLE){
 			when(data_fifo.io.out.fire() & meta_fifo.io.out.fire()){
-				eth_head.next_idx				:= meta_fifo.io.out.bits.next_idx
-                eth_head.index            		:= meta_fifo.io.out.bits.slot_idx
+				eth_head.next_idx				:= HToN(meta_fifo.io.out.bits.next_idx)
+                eth_head.index            		:= HToN(meta_fifo.io.out.bits.slot_idx)
 				eth_head.eth_type            	:= HToN(0x2001.U(16.W))
 
 				io.DataOut.valid            := 1.U

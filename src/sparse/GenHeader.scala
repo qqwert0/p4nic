@@ -23,8 +23,8 @@ class GenHeader extends Module {
         val MetaOut  = (Decoupled(new Meta()))
     })
 
-	val local_fifo = XQueue(UInt(32.W),8)
-	val globe_fifo = XQueue(UInt(32.W),8)
+	val local_fifo = XQueue(UInt(32.W),512)
+	val globe_fifo = XQueue(UInt(32.W),16)
 	io.LocalIndex				<> local_fifo.io.in
 	io.GlobeIndex				<> globe_fifo.io.in
 

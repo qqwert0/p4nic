@@ -15,6 +15,7 @@ object elaborate extends App {
 		case "DenseNICTop" => stage.execute(arr,Seq(ChiselGeneratorAnnotation(() => new DenseNICTop()),dir))
 		case "P4nicSpase" => stage.execute(arr,Seq(ChiselGeneratorAnnotation(() => new P4nicSpase()),dir))
 		case "P4Sim" => stage.execute(arr,Seq(ChiselGeneratorAnnotation(() => new P4Sim()),dir))
+		case "AlveoDynamicTop" => stage.execute(arr,Seq(ChiselGeneratorAnnotation(() => new AlveoDynamicTop()),dir))
 		case _ => println("Module match failed!")
 	}
 }

@@ -23,10 +23,16 @@ class WorkerNICTop extends RawModule {
 
     hbmCattrip := 0.U
 
+    // XQueueConfig.Debug = true
+
     val sysClk = IBUFDS(sysClkP, sysClkN)
 
-	val userClk  	= Wire(Clock())
-	val userRstn 	= Wire(Bool())
+	val userClk  	    = Wire(Clock())
+	val userRstn 	    = Wire(Bool())
+    val userRstn_pre 	= Wire(Bool())
+
+
+
 
     val cmacInst = Module(new XCMAC())
     cmacInst.getTCL()
@@ -40,7 +46,6 @@ class WorkerNICTop extends RawModule {
     val qdmaInst = Module(new QDMA(
         VIVADO_VERSION		= "202101",
         PCIE_WIDTH			= 16,
-        TLB_TYPE			= new GTLB,
         SLAVE_BRIDGE		= true,
         BRIDGE_BAR_SCALE	= "Megabytes",
         BRIDGE_BAR_SIZE 	= 4
@@ -52,8 +57,15 @@ class WorkerNICTop extends RawModule {
     val statusReg   = qdmaInst.io.reg_status
     ToZero(qdmaInst.io.reg_status)
 
-    userClk		:= qdmaInst.io.pcie_clk
-    userRstn	:= qdmaInst.io.pcie_arstn & ~controlReg(0)(0)
+    userClk		    := qdmaInst.io.pcie_clk
+    userRstn_pre	:= qdmaInst.io.pcie_arstn & ~controlReg(0)(0)
+
+    withClockAndReset(userClk, false.B) {
+        val userRstn_r0    = RegNext(userRstn_pre)
+        val userRstn_r1    = RegNext(userRstn_r0)
+        val userRstn_r2    = RegNext(userRstn_r1)
+        userRstn            := userRstn_r2
+    }
 
     qdmaInst.io.user_clk	:= userClk
     qdmaInst.io.user_arstn	:= qdmaInst.io.pcie_arstn
@@ -116,6 +128,8 @@ class WorkerNICTop extends RawModule {
     packetGen.io.engineRand     := controlReg(162)
     packetGen.io.RxIdxDepth     := controlReg(163)
     packetGen.io.IdxTransNum    := controlReg(164)
+    packetGen.io.token_small    := controlReg(166)(7,0)
+    packetGen.io.token_big      := controlReg(167)(7,0)
 
     packetGen.io.rxIdxInitAddr   := Cat(Seq(controlReg(151), controlReg(150)))
     packetGen.io.rxDataInitAddr  := Cat(Seq(controlReg(153), controlReg(152)))

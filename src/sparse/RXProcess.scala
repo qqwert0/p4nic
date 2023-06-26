@@ -20,7 +20,7 @@ class RXProcess extends Module {
         val NetRxOut  = (Decoupled(new AXIS(512)))
     })
 
-	val data_fifo = XQueue(new AXIS(512),8)
+	val data_fifo = XQueue(new AXIS(512),1024)
 	io.NetRxIn			<> data_fifo.io.in
 
 	val sIDLE :: sPAYLOAD :: Nil = Enum(2)
@@ -37,6 +37,10 @@ class RXProcess extends Module {
 	ToZero(io.GlobeIndex2.bits)	
 	ToZero(io.NetRxOut.valid)
 	ToZero(io.NetRxOut.bits)
+
+	Collector.fire(io.GlobalIndex)
+	Collector.fire(io.GlobeIndex2)
+	Collector.fireLast(io.NetRxOut)
 
 
 
@@ -71,5 +75,13 @@ class RXProcess extends Module {
 
 		}		
 	}
+
+    // class ila_rxpro(seq:Seq[Data]) extends BaseILA(seq)
+    // val instIlarx = Module(new ila_rxpro(Seq(	
+    //     io.GlobalIndex,
+	// 	state
+    // )))
+    // instIlarx.connect(clock)    
+
 
 }
