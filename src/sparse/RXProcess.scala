@@ -16,7 +16,7 @@ class RXProcess extends Module {
         val NetRxIn   = Flipped(Decoupled(new AXIS(512)))
         //
         val GlobalIndex  = (Decoupled(new Idx()))
-		val GlobeIndex2  = (Decoupled(UInt(32.W)))
+		val GlobeIndex2  = (Decoupled(new WR_Idx()))
         val NetRxOut  = (Decoupled(new AXIS(512)))
     })
 
@@ -27,6 +27,8 @@ class RXProcess extends Module {
 	val state                   = RegInit(sIDLE)	
 	val eth_head 				= Wire(new ETHHeader())
 	val index					= WireInit(0.U(32.W))
+
+	val index_pre				= Reg(Vec(CONFIG.ENG_NUM,UInt(32.W)))
 
 
 	data_fifo.io.out.ready					:= ((state === sIDLE)&(io.NetRxOut.ready & io.GlobalIndex.ready & io.GlobeIndex2.ready))||((state === sPAYLOAD)&(io.NetRxOut.ready))
@@ -43,6 +45,20 @@ class RXProcess extends Module {
 	Collector.fireLast(io.NetRxOut)
 
 
+    for (i <- 0 until CONFIG.ENG_NUM) {
+		when(reset.asBool){
+			index_pre(i)	:= (i+1).U
+		}.elsewhen((state===sIDLE)&(data_fifo.io.out.fire())&(index(8,1) === i.U)){
+			when(HToN(eth_head.next_idx) === "hffffffff".U){
+				index_pre(i)	:= (i+1).U
+			}.otherwise{
+				index_pre(i)	:= HToN(eth_head.next_idx)
+			}
+		}.otherwise{
+			index_pre(i)	:= index_pre(i)
+		}
+    }
+
 
 	switch(state){
 		is(sIDLE){
@@ -56,7 +72,13 @@ class RXProcess extends Module {
 				index      := HToN(eth_head.index) 
 				io.GlobalIndex.bits.engine_idx      := Cat(0.U(1.W),index(31,1))
                 io.GlobeIndex2.valid     := 1.U
-                io.GlobeIndex2.bits      := HToN(eth_head.next_idx)				 
+                io.GlobeIndex2.bits.block_idx      := index_pre(index(8,1))	
+				when(HToN(eth_head.next_idx) === "hffffffff".U){
+					io.GlobeIndex2.bits.is_last		:= true.B
+				}.otherwise{
+					io.GlobeIndex2.bits.is_last		:= false.B
+				}
+
                 when(data_fifo.io.out.bits.last =/= 1.U){
                     state               := sPAYLOAD
                 }

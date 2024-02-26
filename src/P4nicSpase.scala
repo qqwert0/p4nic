@@ -31,6 +31,10 @@ class P4nicSpase extends Module {
     
     val p4Sim	= (Module(new P4Sim()))
 
+    val eng_hbm = Seq.fill(2)(Module(new AXISToHbm()))
+
+    val hbm_sim = Seq.fill(2)(Module(new DDRSimBlackbox()))
+
     val packetGen	= Seq.fill(2)(Module(new PacketGenerator()))
 
 	p4Sim.io.NetRx(0)                   <>Delay(packetGen(0).io.cmacTx,200)
@@ -89,6 +93,55 @@ class P4nicSpase extends Module {
         packetGen(i).io.token_small      := controlReg(i)(20)
         packetGen(i).io.token_big       := controlReg(i)(21)
 
+
+
+////////////////////
+
+		hbm_sim(i).io.s_aresetn 					:= !(reset.asBool)
+		hbm_sim(i).io.s_aclk 					    := clock
+		hbm_sim(i).io.s_axi_awid              	    := eng_hbm(i).io.hbmAxi.aw.bits.id
+		hbm_sim(i).io.s_axi_awaddr              	:= eng_hbm(i).io.hbmAxi.aw.bits.addr
+		hbm_sim(i).io.s_axi_awlen              	    := eng_hbm(i).io.hbmAxi.aw.bits.len
+		hbm_sim(i).io.s_axi_awsize              	:= eng_hbm(i).io.hbmAxi.aw.bits.size
+		hbm_sim(i).io.s_axi_awburst              	:= eng_hbm(i).io.hbmAxi.aw.bits.burst
+		hbm_sim(i).io.s_axi_awvalid              	:= eng_hbm(i).io.hbmAxi.aw.valid
+		hbm_sim(i).io.s_axi_awready              	<> eng_hbm(i).io.hbmAxi.aw.ready
+		hbm_sim(i).io.s_axi_wdata              	    := eng_hbm(i).io.hbmAxi.w.bits.data(255,0)
+		hbm_sim(i).io.s_axi_wstrb              	    := eng_hbm(i).io.hbmAxi.w.bits.strb
+		hbm_sim(i).io.s_axi_wlast              	    := eng_hbm(i).io.hbmAxi.w.bits.last
+		hbm_sim(i).io.s_axi_wvalid              	:= eng_hbm(i).io.hbmAxi.w.valid
+		hbm_sim(i).io.s_axi_wready              	<> eng_hbm(i).io.hbmAxi.w.ready
+		hbm_sim(i).io.s_axi_bid              		<> eng_hbm(i).io.hbmAxi.b.bits.id
+		hbm_sim(i).io.s_axi_bresp              	    <> eng_hbm(i).io.hbmAxi.b.bits.resp
+		hbm_sim(i).io.s_axi_bvalid              	<> eng_hbm(i).io.hbmAxi.b.valid
+		hbm_sim(i).io.s_axi_bready              	<> eng_hbm(i).io.hbmAxi.b.ready
+		hbm_sim(i).io.s_axi_arid              	    <> eng_hbm(i).io.hbmAxi.ar.bits.id
+		hbm_sim(i).io.s_axi_araddr              	<> eng_hbm(i).io.hbmAxi.ar.bits.addr
+		hbm_sim(i).io.s_axi_arlen              	    <> eng_hbm(i).io.hbmAxi.ar.bits.len
+		hbm_sim(i).io.s_axi_arsize              	<> eng_hbm(i).io.hbmAxi.ar.bits.size
+		hbm_sim(i).io.s_axi_arburst              	<> eng_hbm(i).io.hbmAxi.ar.bits.burst
+		hbm_sim(i).io.s_axi_arvalid              	<> eng_hbm(i).io.hbmAxi.ar.valid
+		hbm_sim(i).io.s_axi_arready              	<> eng_hbm(i).io.hbmAxi.ar.ready
+		hbm_sim(i).io.s_axi_rid              		<> eng_hbm(i).io.hbmAxi.r.bits.id
+		hbm_sim(i).io.s_axi_rdata              	    <> eng_hbm(i).io.hbmAxi.r.bits.data
+		hbm_sim(i).io.s_axi_rresp              	    <> eng_hbm(i).io.hbmAxi.r.bits.resp
+		hbm_sim(i).io.s_axi_rlast              	    <> eng_hbm(i).io.hbmAxi.r.bits.last
+		hbm_sim(i).io.s_axi_rvalid              	<> eng_hbm(i).io.hbmAxi.r.valid
+		hbm_sim(i).io.s_axi_rready              	<> eng_hbm(i).io.hbmAxi.r.ready
+
+
+        eng_hbm(i).io.userClk     	:= clock
+        eng_hbm(i).io.userRstn    	:= !(reset.asBool)
+        eng_hbm(i).io.hbmClk      	:= clock
+        eng_hbm(i).io.hbmRstn     	:= !(reset.asBool)	
+        eng_hbm(i).io.hbmCtrlAr   	<> packetGen(i).io.hbmCtrlAr 
+        eng_hbm(i).io.hbmCtrlR    	<> packetGen(i).io.hbmCtrlR 
+		eng_hbm(i).io.hbmCtrlAw	    <> packetGen(i).io.hbmCtrlAw 
+		eng_hbm(i).io.hbmCtrlW		<> packetGen(i).io.hbmCtrlW 
+
+
+        eng_hbm(i).io.hbmAxi.r.bits.user       := 0.U
+        eng_hbm(i).io.hbmAxi.b.bits.user       := 0.U
 
     }
     // statusReg(128) := packetGen.io.paramReq.ready

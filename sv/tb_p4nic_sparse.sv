@@ -421,25 +421,26 @@ P4nicSpase P4nicSpase_inst(
      * Reg(38)    : memRead len
      * Reg(40-41): memRead req callback
      * Reg(42)    : memRead req valid
-     * Reg(56)    : dataTotalLen
-     * Reg(57)    : IdxTransNum.
+     * Reg(56)    : dataTotalLen //
+     * Reg(57)    : IdxTransNum. //
      * Reg(58)    : rxIdxInitAddr.
      * Reg(59)    : rxDataInitAddr.
-     * Reg(60)    : idxTotalLen
+     * Reg(60)    : idxTotalLen //
      * Reg(61)    : nodeRank.
      * Reg(62)    : engineRand.
      * Reg(63)    : RxIdxDepth.
 
      */
 
-    int index_row0 = 10;
-    int block_num0 = 1027;     
-    int index_row1 = 10;
-    int block_num1 = 1027;
+
+    int index_row0 = 7;
+    int block_num0 = 562;     
+    int index_row1 = 7;
+    int block_num1 = 562;
     int block_byte = 128;
     int ONCE_TX_BLOCK = 1024;
     int ONCE_RX_ROW = 64;
-    int ENGINE_NUM = 256;
+    int ENGINE_NUM = 128;
 
 
 initial begin
@@ -448,10 +449,15 @@ initial begin
     #1000;
     reset <= 0;
     #10
-    // qdma0.init_incr(32'd0,32'd9472,32'd5); //int start_addr, int length, int offset
-    qdma0.init_from_file("/home/amax/hhj/chisel_4p4nic/p4nic/sv/a2.txt",160);//path, line numbers
-    qdma1.init_from_file("/home/amax/hhj/chisel_4p4nic/p4nic/sv/a2.txt",160);//path, line numbers
+    qdma0.init_incr(32'd3584,32'd16384,32'd1); //int start_addr, int length, int offset
+    qdma1.init_incr(32'd3584,32'd16384,32'd1); //int start_addr, int length, int offset
+
+    qdma0.init_from_file("/home/amax/hhj/chisel_4p4nic/p4nic/sv/a1.txt",56);//path, line numbers
+    qdma1.init_from_file("/home/amax/hhj/chisel_4p4nic/p4nic/sv/a1.txt",56);//path, line numbers
     // qdma0.init_incr(32'd27648,32'd16384,32'd5); //int start_addr, int length, int offset
+    #10
+
+
     #100;
     io_controlReg_0_20   <= 8;
     io_controlReg_0_21   <= 16;
@@ -466,10 +472,7 @@ initial begin
     io_controlReg_0_34   <= 0;
     io_controlReg_0_36   <= 0;//memread phys address
     io_controlReg_0_37   <= 0;
-    //io_controlReg_0_38   <= 9472;//memread len 9472=8192+ 1280(10 data packet)
-    //io_controlReg_0_38   <= 270336;//1packet memread len 270336 264KB=8KB+ 256KB
-   // io_controlReg_0_38   <= 540672;//2packet memread len 540672=2*270336 264KB=8KB+ 256KB
-    io_controlReg_0_38   <= ONCE_TX_BLOCK * 4 + ONCE_TX_BLOCK * block_byte;//2packet memread len 135168=2*67584 66KB=2Kb+ 64Kb
+    io_controlReg_0_38   <= index_row0 * ENGINE_NUM/16*64;//2packet memread len 135168=2*67584 66KB=2Kb+ 64Kb
     io_controlReg_0_40   <= 0;
     io_controlReg_0_41   <= 0;
     io_controlReg_0_42   <= 0;
@@ -487,7 +490,7 @@ initial begin
     io_controlReg_1_34   <= 0;
     io_controlReg_1_36   <= 0;
     io_controlReg_1_37   <= 0;
-    io_controlReg_1_38   <= ONCE_TX_BLOCK * 4 + ONCE_TX_BLOCK * block_byte;
+    io_controlReg_1_38   <= index_row1 * ENGINE_NUM/16*64;
     io_controlReg_1_40   <= 0;
     io_controlReg_1_41   <= 0;
     io_controlReg_1_42   <= 0;
@@ -505,74 +508,35 @@ initial begin
     #50
     io_controlReg_0_42   <= 0;  //write qdma0 memory
     io_controlReg_1_42   <= 0;  //write qdma1 memory
-    #150000
-    io_controlReg_0_36   <= ONCE_TX_BLOCK *4;//memread phys address
-    io_controlReg_0_38   <= 4096 + 384;
+    #1000
+    io_controlReg_0_36   <= index_row0 * ENGINE_NUM/16*64;//memread phys address
+    io_controlReg_0_38   <= block_byte * block_num0;
     io_controlReg_0_42   <= 1;  //read qdma0 memory
-    io_controlReg_1_36   <= ONCE_TX_BLOCK *4;//memread phys address
-    io_controlReg_1_38   <= 4096 + 384;
+    io_controlReg_1_36   <= index_row1 * ENGINE_NUM/16*64;//memread phys address
+    io_controlReg_1_38   <= block_byte * block_num1;
     io_controlReg_1_42   <= 1;  //read qdma0 memory
 
     #20
     io_controlReg_0_42   <= 0;  //read qdma0 memory
     io_controlReg_1_42   <= 0;  //read qdma0 memory
-    #150000
-    io_controlReg_0_36   <= ONCE_TX_BLOCK *8;//memread phys address
-    io_controlReg_0_38   <= 2048;
+    #60000
+    io_controlReg_0_36   <= 0;//memread phys address
+    io_controlReg_0_38   <= index_row0 * ENGINE_NUM/16*64;//2packet memread len 135168=2*67584 66KB=2Kb+ 64Kb
+    io_controlReg_1_36   <= 0;
+    io_controlReg_1_38   <= index_row1 * ENGINE_NUM/16*64;
     io_controlReg_0_42   <= 1;  //read qdma0 memory
-    io_controlReg_1_36   <= ONCE_TX_BLOCK *8;//memread phys address
-    io_controlReg_1_38   <= 2048;
+    io_controlReg_1_42   <= 1;  //read qdma0 memory    
+    #50
+    io_controlReg_0_42   <= 0;  //write qdma0 memory
+    io_controlReg_1_42   <= 0;  //write qdma1 memory
+    #1000
+    io_controlReg_0_36   <= index_row0 * ENGINE_NUM/16*64;//memread phys address
+    io_controlReg_0_38   <= block_byte * block_num0;
+    io_controlReg_0_42   <= 1;  //read qdma0 memory
+    io_controlReg_1_36   <= index_row1 * ENGINE_NUM/16*64;//memread phys address
+    io_controlReg_1_38   <= block_byte * block_num1;
     io_controlReg_1_42   <= 1;  //read qdma0 memory
-    // #20
-    // io_controlReg_0_42   <= 0;  //read qdma0 memory
-    // io_controlReg_1_42   <= 0;  //read qdma0 memory
-    // #150000
-    // io_controlReg_0_36   <= ONCE_TX_BLOCK *12;//memread phys address
-    // io_controlReg_0_42   <= 1;  //read qdma0 memory
-    // io_controlReg_1_36   <= ONCE_TX_BLOCK *12;//memread phys address
-    // io_controlReg_1_42   <= 1;  //read qdma0 memory
-    // #20
-    // io_controlReg_0_42   <= 0;  //read qdma0 memory
-    // io_controlReg_1_42   <= 0;  //read qdma0 memory
-    // #150000
-    // io_controlReg_0_36   <= ONCE_TX_BLOCK *16;//memread phys address
-    // io_controlReg_0_42   <= 1;  //read qdma0 memory
-    // io_controlReg_1_36   <= ONCE_TX_BLOCK *16;//memread phys address
-    // io_controlReg_1_42   <= 1;  //read qdma0 memory
-    // #20
-    // io_controlReg_0_42   <= 0;  //read qdma0 memory
-    // io_controlReg_1_42   <= 0;  //read qdma0 memory
-    // #150000
-    // io_controlReg_0_36   <= ONCE_TX_BLOCK *20;//memread phys address
-    // io_controlReg_0_42   <= 1;  //read qdma0 memory
-    // io_controlReg_1_36   <= ONCE_TX_BLOCK *20;//memread phys address
-    // io_controlReg_1_42   <= 1;  //read qdma0 memory
-    // #20
-    // io_controlReg_0_42   <= 0;  //read qdma0 memory
-    // io_controlReg_1_42   <= 0;  //read qdma0 memory
-    // #150000
-    // io_controlReg_0_36   <= ONCE_TX_BLOCK *24;//memread phys address
-    // // io_controlReg_0_38   <= 3072 + 89856;//2packet memread len 
-    // io_controlReg_0_42   <= 1;  //read qdma0 memory
-    // io_controlReg_1_36   <= ONCE_TX_BLOCK *24;//memread phys address
-    // // io_controlReg_1_38   <= 3072 + 89856;//2packet memread len 
-    // io_controlReg_1_42   <= 1;  //read qdma0 memory
-    // #20
-    // io_controlReg_0_42   <= 0;  //read qdma0 memory
-    // io_controlReg_1_42   <= 0;  //read qdma0 memory
-    // #150000
-    // io_controlReg_0_36   <= ONCE_TX_BLOCK *28;//memread phys address
-    // io_controlReg_0_42   <= 1;  //read qdma0 memory
-    // io_controlReg_1_36   <= ONCE_TX_BLOCK *28;//memread phys address
-    // io_controlReg_1_42   <= 1;  //read qdma0 memory
-    // #20
-    // io_controlReg_0_42   <= 0;  //read qdma0 memory
-    // io_controlReg_1_42   <= 0;  //read qdma0 memory
-    // #150000
-    // io_controlReg_0_36   <= ONCE_TX_BLOCK *32;//memread phys address
-    // io_controlReg_0_42   <= 1;  //read qdma0 memory
-    // io_controlReg_1_36   <= ONCE_TX_BLOCK *32;//memread phys address
-    // io_controlReg_1_42   <= 1;  //read qdma0 memory
+
 
 
 end

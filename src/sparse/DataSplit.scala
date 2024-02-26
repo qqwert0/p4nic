@@ -24,9 +24,13 @@ class DataSplit extends Module {
     })
 
 	val data_fifo = XQueue(UInt(512.W),4096)
+	val fifo_sim = Module(new XQueueSim) 
 	val idx_fifo = XQueue(new Idx(),1024)
 	io.IndexOut			<> idx_fifo.io.out
-	io.DataOut			<> data_fifo.io.out
+	// io.DataOut			<> data_fifo.io.out
+	io.DataOut			<> fifo_sim.io.DataOut
+	fifo_sim.io.DataIn	<> data_fifo.io.out
+
 
 	val sIDLE :: sIDEX :: sDATA :: sEND :: Nil = Enum(4)
 	val state                   = RegInit(sIDLE)

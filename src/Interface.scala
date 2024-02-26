@@ -16,6 +16,11 @@ class ETHHeader extends Bundle{
 
 
 class Meta extends Bundle{
+	val meta 	= new Header()
+    val eng_Idx = new Eng_Idx()
+}
+
+class Header extends Bundle{
 	val head 	= new ETHHeader()
     val is_empty    = Bool()
 }
@@ -24,6 +29,17 @@ class Meta extends Bundle{
 class Idx extends Bundle{
 	val block_idx 	= UInt(32.W)
     val engine_idx  = UInt(8.W)
+}
+
+
+class WR_Idx extends Bundle{
+	val block_idx 	= UInt(32.W)
+    val is_last     = Bool()
+}
+
+class Eng_Idx extends Bundle{
+	val engine_idx 	= UInt(7.W)
+    val is_empty    = Bool()
 }
 
 class INDEX_STATE extends Bundle{
@@ -46,5 +62,5 @@ object HToN {
     }
 }
 object CONFIG{
-    def ENG_NUM = 256
+    def ENG_NUM = 128
 }

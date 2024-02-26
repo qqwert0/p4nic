@@ -15,31 +15,37 @@ class NetTxAddEthSpa extends Module {
     val io = IO(new Bundle {
         // Net data
         val DataIn   = Flipped(Decoupled(new AXIS(512)))
-        val MetaIn   = Flipped(Decoupled(new Meta()))
+        val MetaIn   = Flipped(Decoupled(new Header()))
         // User data
         val DataOut  = (Decoupled(new AXIS(512)))
+
+        val rfinal      = Input(Bool())
     })
 
 	val data_fifo = XQueue(new AXIS(512),4096)
-    val meta_fifo = XQueue(new Meta(),512)
+    val meta_fifo = XQueue(new Header(),512)
 	io.DataIn			<> data_fifo.io.in
     io.MetaIn			<> meta_fifo.io.in
 
-    val blank_meta_fifo = XQueue(new Meta(),16)
+    val blank_meta_fifo = XQueue(new Header(),16)
     val blank_data_fifo = XQueue(new AXIS(512),16)
-    val payload_meta_fifo = XQueue(new Meta(),16)
+    val payload_meta_fifo = XQueue(new Header(),16)
     val payload_data_fifo = XQueue(new AXIS(512),16)
+    val reset_data_fifo = XQueue(new AXIS(512),4)
 
-    val arbiter			= SerialArbiter(new AXIS(512),2)
+    val arbiter			= SerialArbiter(new AXIS(512),3)
 
 	val sIDLE :: sBLANK :: sPAYLOAD :: sLAST :: Nil = Enum(4)
 	val state                   = RegInit(sIDLE)
     val bstate                  	= RegInit(sIDLE)
-	val meta_reg					= Reg(new Meta())
+	val meta_reg					= Reg(new Header())
 
 	Collector.fire(io.DataIn)
 	Collector.fire(io.MetaIn)
     Collector.fire(io.DataOut)
+    Collector.fire(meta_fifo.io.out)
+    Collector.fire(payload_meta_fifo.io.in)
+    Collector.fire(payload_meta_fifo.io.out)
 
 	
     meta_fifo.io.out.ready                  := payload_meta_fifo.io.in.ready & blank_meta_fifo.io.in.ready
@@ -56,6 +62,17 @@ class NetTxAddEthSpa extends Module {
 	ToZero(payload_meta_fifo.io.in.bits)
 	ToZero(payload_data_fifo.io.in.valid)
 	ToZero(payload_data_fifo.io.in.bits)
+	ToZero(reset_data_fifo.io.in.valid)
+	ToZero(reset_data_fifo.io.in.bits)
+
+
+    when(io.rfinal & (!RegNext(io.rfinal))){
+        reset_data_fifo.io.in.valid            := 1.U
+        reset_data_fifo.io.in.bits.data        := Cat(0.U(400.W),"h0420".U,0.U(96.W))
+        reset_data_fifo.io.in.bits.last        := 1.U
+        reset_data_fifo.io.in.bits.keep        := -1.S(64.W).asTypeOf(UInt(64.W))        
+    }
+
 
 	when(meta_fifo.io.out.fire()){
         when(meta_fifo.io.out.bits.is_empty){
@@ -129,6 +146,7 @@ class NetTxAddEthSpa extends Module {
 
     arbiter.io.in(0)        <>  blank_data_fifo.io.out
     arbiter.io.in(1)        <>  payload_data_fifo.io.out
+    arbiter.io.in(2)        <>  reset_data_fifo.io.out
     arbiter.io.out          <>  io.DataOut
 
     // val blank_data_valid = blank_data_fifo.io.in.valid

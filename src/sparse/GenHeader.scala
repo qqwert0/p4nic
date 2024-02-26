@@ -48,29 +48,34 @@ class GenHeader extends Module {
 	// Collector.report(state_reg)
 
 
+
 	switch(state){
 		is(sIDLE){
 			when(local_fifo.io.out.fire()){
-                io.MetaOut.bits.head.next_idx           	:= HToN(local_fifo.io.out.bits)
-                io.MetaOut.bits.head.bitmap            	    := HToN(io.Bitmap)
-                io.MetaOut.bits.head.index            		:= HToN(index_tmp)                
-                io.MetaOut.bits.head.eth_type            	:= HToN(0x2001.U(16.W))
-                io.MetaOut.bits.is_empty            	    := false.B
+                io.MetaOut.bits.meta.head.next_idx           	:= HToN(local_fifo.io.out.bits)
+                io.MetaOut.bits.meta.head.bitmap            	:= HToN(io.Bitmap)
+                io.MetaOut.bits.meta.head.index            		:= HToN(index_tmp)                
+                io.MetaOut.bits.meta.head.eth_type            	:= HToN(0x2001.U(16.W))
+                io.MetaOut.bits.meta.is_empty            	    := false.B
                 index_t                                     := index_t + 1.U
                 io.MetaOut.valid                            := 1.U
+                io.MetaOut.bits.eng_Idx.engine_idx          := RegNext(io.EngineRank(6,0))
+                io.MetaOut.bits.eng_Idx.is_empty            := false.B
                 local_index_tmp                 := local_fifo.io.out.bits
                 state                           := sRECV			
 			}
 		}
 		is(sREAD){
 			when(local_fifo.io.out.fire()){
-                io.MetaOut.bits.head.next_idx           	:= HToN(local_fifo.io.out.bits)
-                io.MetaOut.bits.head.bitmap            	    := HToN(io.Bitmap)
-                io.MetaOut.bits.head.index            		:= HToN(index_tmp)                
-                io.MetaOut.bits.head.eth_type            	:= HToN(0x2001.U(16.W))
-                io.MetaOut.bits.is_empty            	    := false.B
+                io.MetaOut.bits.meta.head.next_idx           	:= HToN(local_fifo.io.out.bits)
+                io.MetaOut.bits.meta.head.bitmap            	    := HToN(io.Bitmap)
+                io.MetaOut.bits.meta.head.index            		:= HToN(index_tmp)                
+                io.MetaOut.bits.meta.head.eth_type            	:= HToN(0x2001.U(16.W))
+                io.MetaOut.bits.meta.is_empty            	    := false.B
                 index_t                                     := index_t + 1.U
                 io.MetaOut.valid                            := 1.U
+                io.MetaOut.bits.eng_Idx.engine_idx          := RegNext(io.EngineRank(6,0))
+                io.MetaOut.bits.eng_Idx.is_empty            := false.B                
                 local_index_tmp                 := local_fifo.io.out.bits
                 state                           := sRECV
 			}
@@ -78,16 +83,20 @@ class GenHeader extends Module {
 
 		is(sRECV){
 			when(globe_fifo.io.out.fire()){
-                when(local_index_tmp === globe_fifo.io.out.bits){
+                when(globe_fifo.io.out.bits === "hffffffff".U){
+                    state                                       := sIDLE
+                }.elsewhen(local_index_tmp === globe_fifo.io.out.bits){
                     state                                       := sREAD
                 }.otherwise{
-                    io.MetaOut.bits.head.next_idx           	:= HToN(local_index_tmp)
-                    io.MetaOut.bits.head.bitmap            	    := HToN(io.Bitmap)
-                    io.MetaOut.bits.head.index            		:= HToN(index_tmp)                
-                    io.MetaOut.bits.head.eth_type            	:= HToN(0x2002.U(16.W))
-                    io.MetaOut.bits.is_empty            	    := true.B
+                    io.MetaOut.bits.meta.head.next_idx           	:= HToN(local_index_tmp)
+                    io.MetaOut.bits.meta.head.bitmap            	    := HToN(io.Bitmap)
+                    io.MetaOut.bits.meta.head.index            		:= HToN(index_tmp)                
+                    io.MetaOut.bits.meta.head.eth_type            	:= HToN(0x2002.U(16.W))
+                    io.MetaOut.bits.meta.is_empty            	    := true.B
                     index_t                                     := index_t + 1.U
                     io.MetaOut.valid                            := 1.U
+                    io.MetaOut.bits.eng_Idx.engine_idx          := RegNext(io.EngineRank(6,0))
+                    io.MetaOut.bits.eng_Idx.is_empty            := true.B  
                     state                                       := sRECV
                 }
 			}

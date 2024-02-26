@@ -9,36 +9,50 @@ import common.ToZero
 import cmac._
 import qdma._
 import hbm._
-import common.partialReconfig.AlveoStaticIO
+
+class WorkerNICTopnew extends RawModule {
+    // I/O ports
+
+    // Now it just hangs.
+    val hbmCattrip		= IO(Output(UInt(1.W)))
+    // Board system clocks.
+    val sysClkP			= IO(Input(Clock()))
+    val sysClkN			= IO(Input(Clock()))
+    // Pins, including gt clocks.
+    val cmacPin			= IO(new CMACPin())
+    val qdmaPin			= IO(new QDMAPin())
+
+    hbmCattrip := 0.U
 
 
-class WorkerNICTop extends MultiIOModule {
-	override val desiredName = "AlveoDynamicTop"
-    val io = IO(Flipped(new AlveoStaticIO(
-        VIVADO_VERSION = "202101", 
-		QDMA_PCIE_WIDTH = 16, 
-		QDMA_SLAVE_BRIDGE = true, 
-		QDMA_AXI_BRIDGE = true,
-		ENABLE_CMAC_1 = false,
-		ENABLE_CMAC_2 		= true,
-		ENABLE_DDR_1		= false,
-		ENABLE_DDR_2		= false,		
-    )))
+	val mmcmTop	= Module(new MMCME4_ADV_Wrapper(
+		CLKFBOUT_MULT_F 		= 10,
+		MMCM_DIVCLK_DIVIDE		= 1,
+		MMCM_CLKOUT0_DIVIDE_F	= 10,
+		MMCM_CLKOUT1_DIVIDE_F	= 4,
+		MMCM_CLKOUT2_DIVIDE_F	= 10,
+		MMCM_CLKOUT3_DIVIDE_F	= 4,
+		MMCM_CLKIN1_PERIOD 		= 10
+	))
 
+	mmcmTop.io.CLKIN1	:= IBUFDS(sysClkP,sysClkN)
+	mmcmTop.io.RST		:= 0.U
 
-	val dbgBridgeInst = DebugBridge(clk=clock)
-	dbgBridgeInst.getTCL()
+	val clk_hbm_driver	= mmcmTop.io.CLKOUT0 //100M
+	val cmacClk			= mmcmTop.io.CLKOUT2 //100M
+	val netClk			= mmcmTop.io.CLKOUT3 //250M
 
-    dontTouch(io)
 	//HBM
-	val hbmDriver = withClockAndReset(io.sysClk, false.B) {Module(new HBM_DRIVER(WITH_RAMA=false, IP_CORE_NAME="HBMBlackBox"))}
+    val hbmDriver 		= withClockAndReset(clk_hbm_driver, false.B) {Module(new HBM_DRIVER(WITH_RAMA=false))}
 	hbmDriver.getTCL()
 	val hbmClk 	    	= hbmDriver.io.hbm_clk
 	val hbmRstn     	= withClockAndReset(hbmClk,false.B) {RegNext(hbmDriver.io.hbm_rstn.asBool)}
+    
 
 	for (i <- 0 until 32) {
 		hbmDriver.io.axi_hbm(i).hbm_init()	// Read hbm_init function if you're not familiar with AXI.
-	}   
+	}
+
 	dontTouch(hbmClk)
 	dontTouch(hbmRstn)
 
@@ -47,84 +61,71 @@ class WorkerNICTop extends MultiIOModule {
 
 	val userClk  	    = Wire(Clock())
 	val userRstn 	    = Wire(Bool())
+    val userRstn_pre 	= Wire(Bool())
 
 
 
-	val qdma = Module(new QDMADynamic(
-		VIVADO_VERSION		= "202002",
-		PCIE_WIDTH			= 16,
-		SLAVE_BRIDGE		= true,
-		BRIDGE_BAR_SCALE	= "Megabytes",
-		BRIDGE_BAR_SIZE 	= 4
-	))
 
+    val cmacInst = Module(new XCMAC())
+    cmacInst.getTCL()
 
+    cmacPin		<> cmacInst.io.pin
+    cmacInst.io.drp_clk         := cmacClk
+    cmacInst.io.user_clk	    := userClk
+    cmacInst.io.user_arstn	    := userRstn
+    cmacInst.io.sys_reset 		<> !userRstn 
 
-	val controlReg  = qdma.io.reg_control
-	val statusReg   = qdma.io.reg_status
-	ToZero(statusReg)
+    val qdmaInst = Module(new QDMA(
+        VIVADO_VERSION		= "202101",
+        PCIE_WIDTH			= 16,
+        SLAVE_BRIDGE		= true,
+        BRIDGE_BAR_SCALE	= "Megabytes",
+        BRIDGE_BAR_SIZE 	= 4
+    ))
+    qdmaInst.getTCL()
 
-	userClk		:= clock
-	userRstn	:= ((~reset.asBool & ~controlReg(0)(0)).asClock).asBool
+    // Connect QDMA's pins
+    val controlReg  = qdmaInst.io.reg_control
+    val statusReg   = qdmaInst.io.reg_status
+    ToZero(qdmaInst.io.reg_status)
 
-	qdma.io.qdma_port	<> io.qdma
-	qdma.io.user_clk	:= userClk
-	qdma.io.user_arstn	:= ~reset.asBool
+    userClk		    := qdmaInst.io.pcie_clk
+    userRstn_pre	:= qdmaInst.io.pcie_arstn & ~controlReg(0)(0)
 
+    withClockAndReset(userClk, false.B) {
+        val userRstn_r0    = RegNext(userRstn_pre)
+        val userRstn_r1    = RegNext(userRstn_r0)
+        val userRstn_r2    = RegNext(userRstn_r1)
+        userRstn            := userRstn_r2
+    }
+
+    qdmaInst.io.user_clk	:= userClk
+    qdmaInst.io.user_arstn	:= qdmaInst.io.pcie_arstn
+    qdmaInst.io.soft_rstn	:= 1.U
+
+    qdmaInst.io.pin 		<> qdmaPin
 
     // Init values
-    qdma.io.axib.ar.ready	:= 1.U
-    qdma.io.axib.aw.ready	:= 1.U
-    qdma.io.axib.w.ready	:= 1.U
-    qdma.io.axib.r.valid	:= 1.U
-    ToZero(qdma.io.axib.r.bits)
-    qdma.io.axib.b.valid	:= 1.U
-    ToZero(qdma.io.axib.b.bits)
-
-
-	// qdma.io.h2c_data.ready	:= 0.U
-	qdma.io.c2h_data.valid	:= 0.U
-	qdma.io.c2h_data.bits	:= 0.U.asTypeOf(new C2H_DATA)
-
-	// qdma.io.h2c_cmd.valid	:= 0.U
-	qdma.io.h2c_cmd.bits	:= 0.U.asTypeOf(new H2C_CMD)
-	qdma.io.c2h_cmd.valid	:= 0.U
-	qdma.io.c2h_cmd.bits	:= 0.U.asTypeOf(new C2H_CMD)
-
-
-
-
-		val cmacInst2 = Module(new XCMAC(BOARD="u280", PORT=1, IP_CORE_NAME="CMACBlackBox"))
-		cmacInst2.getTCL()
-
-		// Connect CMAC's pins
-		cmacInst2.io.pin			<> io.cmacPin2.get
-		cmacInst2.io.drp_clk		:= io.cmacClk.get
-		cmacInst2.io.user_clk		:= userClk
-		cmacInst2.io.user_arstn		:= userRstn
-		cmacInst2.io.sys_reset		:= reset
-
-		cmacInst2.io.m_net_rx.ready  := 1.U
-		ToZero(cmacInst2.io.s_net_tx.bits)
-		cmacInst2.io.s_net_tx.valid  := 0.U
-
-
-
-
-
+    qdmaInst.io.axib.ar.ready	:= 1.U
+    qdmaInst.io.axib.aw.ready	:= 1.U
+    qdmaInst.io.axib.w.ready	:= 1.U
+    qdmaInst.io.axib.r.valid	:= 1.U
+    ToZero(qdmaInst.io.axib.r.bits)
+    qdmaInst.io.axib.b.valid	:= 1.U
+    ToZero(qdmaInst.io.axib.b.bits)
 
     // Packet gen module
 
     val packetGen	= withClockAndReset(userClk, ~userRstn.asBool) {Module(new PacketGenerator())}
 
-    packetGen.io.cmacTx 	<> cmacInst2.io.s_net_tx
-    packetGen.io.cmacRx		<> cmacInst2.io.m_net_rx
+    packetGen.io.cmacTx 	<> cmacInst.io.s_net_tx
+    packetGen.io.cmacRx		<> cmacInst.io.m_net_rx
     withClockAndReset(userClk, ~userRstn.asBool) {
-        packetGen.io.h2cData	<> RegSlice(6)(qdma.io.h2c_data)
-        RegSlice(6)(packetGen.io.c2hCmd)		<> qdma.io.c2h_cmd
-        RegSlice(6)(packetGen.io.c2hData)	    <> qdma.io.c2h_data
-        RegSlice(6)(packetGen.io.h2cCmd)		<> qdma.io.h2c_cmd
-        AXIRegSlice(1)(packetGen.io.sAxib)      <> qdma.io.s_axib.get
+        packetGen.io.h2cData	<> RegSlice(6)(qdmaInst.io.h2c_data)
+        RegSlice(6)(packetGen.io.c2hCmd)		<> qdmaInst.io.c2h_cmd
+        RegSlice(6)(packetGen.io.c2hData)	    <> qdmaInst.io.c2h_data
+        RegSlice(6)(packetGen.io.h2cCmd)		<> qdmaInst.io.h2c_cmd
+        AXIRegSlice(6)(packetGen.io.sAxib)      <> qdmaInst.io.s_axib.get
     }
 
     /* For worker, QDMA regs are used as below:

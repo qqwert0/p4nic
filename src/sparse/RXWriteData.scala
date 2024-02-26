@@ -15,7 +15,7 @@ class RXWriteData extends Module {
         // Net data
         val NetRxIn     = Flipped(Decoupled(new AXIS(512)))
         //
-        val GlobeIndex  = Flipped(Decoupled(UInt(32.W)))
+        val GlobeIndex  = Flipped(Decoupled(new WR_Idx()))
         val DataOut     = (Decoupled(UInt(512.W)))
 
         val wrMemCmd    = (Decoupled(new PacketRequest))  //addr(64bit),  size(32bit),   callback=0(64bit)
@@ -25,11 +25,12 @@ class RXWriteData extends Module {
         val rxDataInitAddr = Input(UInt(64.W))
         val IdxDepth    = Input(UInt(32.W))
 		val rfinal  		= Output(Bool())
+        val reset_final     = Input(Bool())
       
     })
 
 	val data_fifo = XQueue(new AXIS(512),4096)
-    val meta_fifo = XQueue(UInt(32.W),1024)
+    val meta_fifo = XQueue(new WR_Idx(),1024)
 	io.NetRxIn			    <> data_fifo.io.in
     io.GlobeIndex			<> meta_fifo.io.in
 
@@ -40,7 +41,7 @@ class RXWriteData extends Module {
 	val state                   = RegInit(sIDLE)
 	val idx_num 				= RegNext(io.IdxDepth)	
 	val data_num 				= RegNext(io.IdxDepth<<5.U)
-    val shift_cnt               = RegInit(0.U(8.W))	
+    val shift_cnt               = RegInit(0.U(4.W))	
     val index_cnt               = RegInit(0.U(32.W))
     val data_cnt                = RegInit(0.U(32.W))
     val data_out_cnt            = RegInit(0.U(32.W))
@@ -60,7 +61,7 @@ class RXWriteData extends Module {
     val state_reg               = RegInit(0.U(32.W))
     state_reg                   := RegNext(state)
     val rxfinal_cnt_reg         = RegInit(0.U(32.W))
-    state_reg                   := RegNext(rxfinal_cnt)    
+    rxfinal_cnt_reg             := RegNext(rxfinal_cnt)    
     Collector.report(state_reg)
     Collector.report(rxfinal)
     Collector.report(rxfinal_cnt_reg)
@@ -73,28 +74,36 @@ class RXWriteData extends Module {
 	ToZero(io.wrMemCmd.bits)
 
 
+    when((state===sIDLE)&(meta_fifo.io.out.fire())&(meta_fifo.io.out.bits.is_last) & (rxfinal_cnt === (CONFIG.ENG_NUM-1).U)){
+        rxfinal             := true.B
+    }.elsewhen(RegNext(io.reset_final)){
+        rxfinal             := false.B
+    }.otherwise{
+        rxfinal             := rxfinal
+    }
+
+
 
 	switch(state){
 		is(sIDLE){
 			when(meta_fifo.io.out.fire()){
-                index_tmp               := Cat(index_tmp(479,0),meta_fifo.io.out.bits)
-                shift_cnt               := shift_cnt + 1.U 
+                index_tmp               := Cat(meta_fifo.io.out.bits.block_idx,index_tmp(511,32))
                 data_cnt                := data_cnt + 1.U
 
-				when(meta_fifo.io.out.bits === "hffffffff".U){
+				when(meta_fifo.io.out.bits.is_last){
 					rxfinal_cnt			:= rxfinal_cnt + 1.U
 				}
 
 
-                when((meta_fifo.io.out.bits === "hffffffff".U) && (rxfinal_cnt === (CONFIG.ENG_NUM-1).U)){
-					rxfinal             := true.B
+                when((meta_fifo.io.out.bits.is_last) && (rxfinal_cnt === (CONFIG.ENG_NUM-1).U)){
+					shift_cnt           := shift_cnt
 					rxfinal_cnt			:= 0.U
-					shift_cnt			:= 0.U
                     state               := sINDEX 
                 }.elsewhen(shift_cnt === 15.U){
-					shift_cnt			:= 0.U
+                    shift_cnt           := shift_cnt
                     state               := sINDEX 
                 }.otherwise{
+                    shift_cnt           := shift_cnt + 1.U
                     state               := sIDLE
                 }        
 
@@ -103,8 +112,9 @@ class RXWriteData extends Module {
 		is(sINDEX){
             when(out_fifo.io.in.ready){
 				out_fifo.io.in.valid        := 1.U
-                out_fifo.io.in.bits         := index_tmp
+                out_fifo.io.in.bits         := index_tmp >> ((15.U-shift_cnt)<<5.U)
                 index_cnt                   := index_cnt + 1.U
+                shift_cnt			        := 0.U
                 when((index_cnt === idx_num - 1.U) || rxfinal){
                     state               := sWRITEIDX
                 }.otherwise{
@@ -156,5 +166,23 @@ class RXWriteData extends Module {
             }
 		}		
 	}
+
+
+
+
+    // val iodataout = Wire(UInt(64.W))
+    // iodataout := io.DataOut.bits(64,0)
+
+
+    // class ila_wr(seq:Seq[Data]) extends BaseILA(seq)
+    // val instIlaWR = Module(new ila_wr(Seq(	
+    //     state,
+    //     io.DataOut.ready,
+    //     io.DataOut.valid,
+    //     // iodataout
+    // )))
+    // instIlaWR.connect(clock)    
+
+
 
 }

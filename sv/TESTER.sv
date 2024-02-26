@@ -429,7 +429,7 @@ endmodule
 
     task init_incr(int start_addr, int length, int offset);//单位 cacheword
         start_addr = start_addr/64;
-        length     = length/64;
+        length     = length;
         for(i=0;i<length;i=i+1)begin
             fifo[start_addr+i] = i+offset;
         end
