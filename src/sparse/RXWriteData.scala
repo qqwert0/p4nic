@@ -154,7 +154,7 @@ class RXWriteData extends Module {
 		is(sPAYLOAD){
             when(data_fifo.io.out.fire()){
 				out_fifo.io.in.valid        := 1.U
-                out_fifo.io.in.bits         := data_fifo.io.out.bits.data
+                out_fifo.io.in.bits         := Util.reverse(data_fifo.io.out.bits.data)
                 data_out_cnt                := data_out_cnt + 1.U
                 when(data_out_cnt === ((data_cnt << 1.U) - 1.U)){
                     data_cnt                := 0.U

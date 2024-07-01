@@ -7,6 +7,21 @@ import common.storage._
 import qdma._
 import common._
 
+object Util{
+    def reverse(data:UInt)={
+        val width = data.getWidth
+        val res =  WireInit(VecInit(Seq.fill(width)(0.U(1.W))))
+
+        for(i<-0 until width/8){
+            for(j<-0 until 8){
+                res(i*8+j) := data(width-(i*8)+j-8)
+            }
+        }
+        res.asUInt()
+    }
+}
+
+
 class ETHHeader extends Bundle{
     val eth_type 	= UInt(16.W)
 	val next_idx 	= UInt(32.W)

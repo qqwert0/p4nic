@@ -35,7 +35,7 @@ class NetTxPkg extends Module {
 		is(sIDLE){
 			when(io.DataTx.fire()){
 				io.NetTx.valid            := 1.U
-                io.NetTx.bits.data        := io.DataTx.bits
+                io.NetTx.bits.data        := Util.reverse(io.DataTx.bits)
                 io.NetTx.bits.last        := 0.U
 				io.NetTx.bits.keep        := -1.S(64.W).asTypeOf(UInt(64.W))
                 state                       := sPAYLOAD
@@ -46,7 +46,7 @@ class NetTxPkg extends Module {
 		is(sPAYLOAD){
 			when(io.DataTx.fire()){
 				io.NetTx.valid            := 1.U
-                io.NetTx.bits.data        := io.DataTx.bits
+                io.NetTx.bits.data        := Util.reverse(io.DataTx.bits)
                 io.NetTx.bits.last        := 1.U
 				io.NetTx.bits.keep        := -1.S(64.W).asTypeOf(UInt(64.W))
                 state                       := sIDLE
